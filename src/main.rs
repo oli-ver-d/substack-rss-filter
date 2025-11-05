@@ -1,14 +1,17 @@
 use axum::{
     Router,
-    extract::Path,
+    extract::{Path, Query, Request, State},
     http::{HeaderMap, StatusCode, header},
+    middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::get,
 };
 use clap::Parser;
 use reqwest::Client;
 use rss::{Channel, Item};
-use std::net::SocketAddr;
+use serde::Deserialize;
+use std::sync::Arc;
+use std::{collections::HashMap, net::SocketAddr};
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
@@ -16,15 +19,28 @@ struct Args {
     /// Sets a port to expose the web server on
     #[arg(short, long, default_value_t = 3000)]
     port: u16,
+
+    /// Sets the api key to authenticate against
+    #[arg(long, env = "SRF_API_KEY")]
+    api_key: String,
+}
+
+#[derive(Clone)]
+struct AppState {
+    api_key: Arc<String>,
 }
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
+    let state = AppState {
+        api_key: Arc::new(args.api_key),
+    };
 
-    let app = Router::new()
-        .route("/", get(root))
-        .route("/filter/{*url}", get(filter_feed));
+    let app = Router::new().route("/", get(root)).route(
+        "/filter/{*url}",
+        get(filter_feed).route_layer(middleware::from_fn_with_state(state.clone(), auth)),
+    );
     let addr = SocketAddr::from(([127, 0, 0, 1], args.port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
 
@@ -32,7 +48,7 @@ async fn main() {
 }
 
 async fn root() -> &'static str {
-    "Web Server to filter out premium substack posts from RSS feed\n\nUsage: {url}/filter/{rss_feed_url}"
+    "Web Server to filter out premium substack posts from RSS feed\n\nUsage: {url}/filter/{rss_feed_url}?API_KEY={API_KEY}"
 }
 
 async fn filter_feed(Path(url): Path<String>) -> Result<impl IntoResponse, AppError> {
@@ -95,6 +111,25 @@ async fn fetch_feed(url: &str) -> Result<String, AppError> {
         .text()
         .await
         .map_err(|e| AppError::FetchError(e.to_string()))
+}
+
+async fn auth(State(state): State<AppState>, req: Request, next: Next) -> Response {
+    let uri_api_key = match Query::<UriApiKey>::try_from_uri(req.uri()) {
+        Ok(Query(uri_api_key)) => uri_api_key,
+        Err(_) => return (StatusCode::UNAUTHORIZED, "Missing API_KEY").into_response(),
+    };
+
+    if uri_api_key.api_key == *state.api_key {
+        next.run(req).await
+    } else {
+        (StatusCode::UNAUTHORIZED, "Invalid API_KEY").into_response()
+    }
+}
+
+#[derive(Deserialize)]
+struct UriApiKey {
+    #[serde(rename = "API_KEY")]
+    api_key: String,
 }
 
 #[derive(Debug)]
