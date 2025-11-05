@@ -5,16 +5,27 @@ use axum::{
     response::{IntoResponse, Response},
     routing::get,
 };
+use clap::Parser;
 use reqwest::Client;
 use rss::{Channel, Item};
 use std::net::SocketAddr;
 
+#[derive(Parser, Debug)]
+#[command(version, about)]
+struct Args {
+    /// Sets a port to expose the web server on
+    #[arg(short, long, default_value_t = 3000)]
+    port: u16,
+}
+
 #[tokio::main]
 async fn main() {
+    let args = Args::parse();
+
     let app = Router::new()
         .route("/", get(root))
         .route("/filter/{*url}", get(filter_feed));
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], args.port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
 
     axum::serve(listener, app).await.unwrap();
