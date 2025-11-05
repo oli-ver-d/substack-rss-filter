@@ -7,7 +7,6 @@ use axum::{
     http::{HeaderMap, header},
     response::IntoResponse,
 };
-use clap::Parser;
 use rss::Channel;
 
 pub async fn root() -> &'static str {
