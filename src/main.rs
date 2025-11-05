@@ -11,7 +11,7 @@ use reqwest::Client;
 use rss::{Channel, Item};
 use serde::Deserialize;
 use std::sync::Arc;
-use std::{collections::HashMap, net::SocketAddr};
+use std::net::SocketAddr;
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
