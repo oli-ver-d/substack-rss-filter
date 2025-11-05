@@ -1,20 +1,14 @@
 use crate::{
-    errors::AppError,
     routes::{filter_feed, root},
     srf_middleware::auth,
     state::AppState,
 };
 use axum::{
     Router,
-    extract::{Path, Query, Request, State},
-    http::{HeaderMap, header},
-    middleware::{self, Next},
-    response::IntoResponse,
+    middleware::{self},
     routing::get,
 };
 use clap::Parser;
-use reqwest::Client;
-use rss::{Channel, Item};
 use std::net::SocketAddr;
 use std::sync::Arc;
 

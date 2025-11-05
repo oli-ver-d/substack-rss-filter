@@ -1,22 +1,6 @@
-use crate::{
-    errors::AppError,
-    routes::{filter_feed, root},
-    srf_middleware::auth,
-    state::AppState,
-};
-use axum::{
-    Router,
-    extract::{Path, Query, Request, State},
-    http::{HeaderMap, header},
-    middleware::{self, Next},
-    response::IntoResponse,
-    routing::get,
-};
-use clap::Parser;
+use crate::errors::AppError;
 use reqwest::Client;
-use rss::{Channel, Item};
-use std::net::SocketAddr;
-use std::sync::Arc;
+use rss::Item;
 
 pub fn filter_items(items: Vec<Item>) -> Vec<Item> {
     items

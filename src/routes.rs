@@ -1,22 +1,14 @@
 use crate::{
     errors::AppError,
     feed::{fetch_feed, filter_items},
-    srf_middleware::auth,
-    state::AppState,
 };
 use axum::{
-    Router,
-    extract::{Path, Query, Request, State},
+    extract::Path,
     http::{HeaderMap, header},
-    middleware::{self, Next},
     response::IntoResponse,
-    routing::get,
 };
 use clap::Parser;
-use reqwest::Client;
-use rss::{Channel, Item};
-use std::net::SocketAddr;
-use std::sync::Arc;
+use rss::Channel;
 
 pub async fn root() -> &'static str {
     "Web Server to filter out premium substack posts from RSS feed\n\nUsage: {url}/filter/{rss_feed_url}?API_KEY={API_KEY}"

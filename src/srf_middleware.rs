@@ -1,11 +1,8 @@
 use crate::{errors::AppError, state::AppState};
 use axum::{
-    Router,
-    extract::{Path, Query, Request, State},
-    http::{HeaderMap, header},
-    middleware::{self, Next},
+    extract::{Query, Request, State},
+    middleware::Next,
     response::IntoResponse,
-    routing::get,
 };
 use serde::Deserialize;
 
